@@ -1,0 +1,210 @@
+# FriBidi WASM Build System
+# High-performance Unicode Bidirectional Algorithm implementation compiled to WebAssembly
+# Based on GNU FriBidi library with SIMD optimizations and modern TypeScript interfaces
+
+cmake_minimum_required(VERSION 3.16)
+project(fribidi-wasm VERSION 1.0.16 LANGUAGES C)
+
+# Build configuration
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Emscripten-specific settings
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".js")
+endif()
+
+# Build variants
+option(FRIBIDI_WASM_SIMD "Enable SIMD optimizations" ON)
+option(FRIBIDI_WASM_DEBUG "Enable debug build" OFF)
+option(FRIBIDI_WASM_COMPACT "Enable size-optimized build" OFF)
+
+# Source files - core FriBidi implementation
+set(FRIBIDI_SOURCES
+    lib/fribidi.c
+    lib/fribidi-arabic.c
+    lib/fribidi-bidi.c
+    lib/fribidi-bidi-types.c
+    lib/fribidi-brackets.c
+    lib/fribidi-char-sets.c
+    lib/fribidi-char-sets-cap-rtl.c
+    lib/fribidi-char-sets-cp1255.c
+    lib/fribidi-char-sets-cp1256.c
+    lib/fribidi-char-sets-iso8859-6.c
+    lib/fribidi-char-sets-iso8859-8.c
+    lib/fribidi-char-sets-utf8.c
+    lib/fribidi-deprecated.c
+    lib/fribidi-joining.c
+    lib/fribidi-joining-types.c
+    lib/fribidi-mirroring.c
+    lib/fribidi-run.c
+    lib/fribidi-shape.c
+)
+
+# WASM-specific sources for optimizations and bindings
+set(FRIBIDI_WASM_SOURCES
+    src/fribidi-wasm.c
+    src/fribidi-wasm-api.c
+    src/fribidi-wasm-utils.c
+)
+
+# SIMD-optimized sources (optional)
+if(FRIBIDI_WASM_SIMD)
+    list(APPEND FRIBIDI_WASM_SOURCES
+        src/fribidi-simd-bidi.c
+        src/fribidi-simd-utils.c
+        src/fribidi-simd-unicode.c
+    )
+endif()
+
+# Include directories
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+# Generate config header
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/fribidi-config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/fribidi-config.h
+)
+
+# Create WASM library target
+add_executable(fribidi-wasm ${FRIBIDI_SOURCES} ${FRIBIDI_WASM_SOURCES})
+
+# Compiler definitions
+target_compile_definitions(fribidi-wasm PRIVATE
+    FRIBIDI_VERSION="${PROJECT_VERSION}"
+    FRIBIDI_NAME="GNU FriBidi"
+    FRIBIDI_BUGREPORT="https://github.com/superstruct/fribidi.wasm/issues"
+    FRIBIDI_INTERFACE_VERSION_STRING="${PROJECT_VERSION}"
+    HAVE_CONFIG_H=1
+)
+
+# SIMD definitions
+if(FRIBIDI_WASM_SIMD)
+    target_compile_definitions(fribidi-wasm PRIVATE FRIBIDI_WASM_SIMD=1)
+endif()
+
+# Emscripten-specific link options
+if(EMSCRIPTEN)
+    # Base Emscripten settings
+    set(EMSCRIPTEN_LINK_FLAGS
+        -s WASM=1
+        -s MODULARIZE=1
+        -s EXPORT_ES6=1
+        -s ENVIRONMENT=web,node
+        -s FILESYSTEM=0
+        -s DISABLE_EXCEPTION_CATCHING=1
+        -s SUPPORT_LONGJMP=0
+        -s TEXTDECODER=1
+        -s DETERMINISTIC=1
+    )
+
+    # Exported functions for JavaScript bindings
+    set(EXPORTED_FUNCTIONS
+        "_fribidi_log2vis_wrapper"
+        "_fribidi_get_bidi_types_wrapper"
+        "_fribidi_get_par_embedding_levels_wrapper"
+        "_fribidi_reorder_line_wrapper"
+        "_fribidi_remove_bidi_marks_wrapper"
+        "_fribidi_shape_arabic_wrapper"
+        "_fribidi_get_mirror_char_wrapper"
+        "_fribidi_get_bracket_types_wrapper"
+        "_fribidi_version_wrapper"
+        "_fribidi_unicode_version_wrapper"
+        "_fribidi_get_type_internal"
+        "_fribidi_get_joining_type_internal"
+        "_malloc"
+        "_free"
+    )
+    
+    list(JOIN EXPORTED_FUNCTIONS "," EXPORTED_FUNCTIONS_STR)
+    list(APPEND EMSCRIPTEN_LINK_FLAGS -s EXPORTED_FUNCTIONS=['${EXPORTED_FUNCTIONS_STR}'])
+    
+    # Exported runtime methods
+    list(APPEND EMSCRIPTEN_LINK_FLAGS 
+        -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','HEAPU8','HEAP32','UTF32ToString','stringToUTF32','setValue','getValue']
+    )
+
+    # Build variant-specific optimizations
+    if(FRIBIDI_WASM_DEBUG)
+        # Debug build
+        list(APPEND EMSCRIPTEN_LINK_FLAGS
+            -O0 -g
+            -s ASSERTIONS=2
+            -s SAFE_HEAP=1
+            -s STACK_OVERFLOW_CHECK=2
+            -s RUNTIME_DEBUG=1
+            -gsource-map
+            --source-map-base=http://localhost:8080/
+            -s INITIAL_MEMORY=32MB
+            -s MAXIMUM_MEMORY=256MB
+            -s ALLOW_MEMORY_GROWTH=1
+            -s STACK_SIZE=2MB
+        )
+    elseif(FRIBIDI_WASM_COMPACT)
+        # Size-optimized build
+        list(APPEND EMSCRIPTEN_LINK_FLAGS
+            -Oz
+            -flto
+            --closure 1
+            -s MALLOC=emmalloc
+            -s INITIAL_MEMORY=8MB
+            -s MAXIMUM_MEMORY=64MB
+            -s ALLOW_MEMORY_GROWTH=1
+            -s STACK_SIZE=1MB
+            -s ASSERTIONS=0
+        )
+    else
+        # Optimized build (default)
+        list(APPEND EMSCRIPTEN_LINK_FLAGS
+            -O3
+            -flto
+            --closure 1
+            -s MALLOC=mimalloc
+            -s INITIAL_MEMORY=16MB
+            -s MAXIMUM_MEMORY=128MB
+            -s ALLOW_MEMORY_GROWTH=1
+            -s STACK_SIZE=2MB
+            -s ASSERTIONS=0
+        )
+        
+        # SIMD optimizations
+        if(FRIBIDI_WASM_SIMD)
+            list(APPEND EMSCRIPTEN_LINK_FLAGS
+                -msimd128
+                -ffast-math
+                -funroll-loops
+                -finline-functions
+            )
+            target_compile_options(fribidi-wasm PRIVATE -msimd128)
+        endif()
+    endif()
+
+    # Apply link flags
+    string(REPLACE ";" " " EMSCRIPTEN_LINK_FLAGS_STR "${EMSCRIPTEN_LINK_FLAGS}")
+    set_target_properties(fribidi-wasm PROPERTIES LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS_STR}")
+endif()
+
+# Installation (for development)
+install(TARGETS fribidi-wasm 
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+# Custom target for building specific variants
+add_custom_target(fribidi-wasm-all
+    COMMENT "Build all FriBidi WASM variants"
+)
+
+# Information target
+add_custom_target(info
+    COMMAND ${CMAKE_COMMAND} -E echo "FriBidi WASM Build Configuration:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Version: ${PROJECT_VERSION}"
+    COMMAND ${CMAKE_COMMAND} -E echo "  SIMD: ${FRIBIDI_WASM_SIMD}"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Debug: ${FRIBIDI_WASM_DEBUG}"
+    COMMAND ${CMAKE_COMMAND} -E echo "  Compact: ${FRIBIDI_WASM_COMPACT}"
+)
