@@ -1,4 +1,12 @@
-# @superstruct/fribidi.wasm
+# @discere-os/fribidi.wasm
+
+WebAssembly port of FriBidi - Implementation of the Unicode Bidirectional Algorithm for proper handling of right-to-left and mixed-direction text.
+
+[![CI/CD](https://github.com/discere-os/discere-nucleus/actions/workflows/fribidi-wasm-ci.yml/badge.svg)](https://github.com/discere-os/discere-nucleus/actions)
+[![JSR](https://jsr.io/badges/@discere-os/fribidi.wasm)](https://jsr.io/@discere-os/fribidi.wasm)
+[![npm version](https://badge.fury.io/js/@discere-os%2Ffribidi.wasm.svg)](https://badge.fury.io/js/@discere-os%2Ffribidi.wasm)
+[![License](https://img.shields.io/badge/License-LGPL--2.1-blue.svg)](COPYING)
+[![Status](https://img.shields.io/badge/status-alpha-orange.svg)](https://github.com/discere-os/discere-nucleus)
 
 **High-performance Unicode Bidirectional Algorithm implementation compiled to WebAssembly**
 
@@ -41,7 +49,7 @@ pnpm benchmark
 ### Basic Text Processing
 
 ```typescript
-import FriBidi from '@superstruct/fribidi.wasm'
+import FriBidi from '@discere-os/fribidi.wasm'
 
 const fribidi = new FriBidi()
 await fribidi.initialize()
@@ -325,9 +333,26 @@ Licensed under the GNU Lesser General Public License (LGPL) 2.1+, same as the or
 Copyright (C) 2004 Sharif FarsiWeb, Inc.  
 Copyright (C) 2001-2004 Behdad Esfahbod
 
-### WASM Fork Attribution  
+## 💖 Support This Work
 
-Copyright (C) 2025 Superstruct Ltd, New Zealand  
+This WebAssembly port is part of a larger effort to bring professional desktop applications to browsers with native performance.
+
+**👨‍💻 About the Maintainer**: [Isaac Johnston (@superstructor)](https://github.com/superstructor) - Building foundational browser-native computing infrastructure through systematic C/C++ to WebAssembly porting.
+
+**📊 Impact**: 70+ open source WASM libraries enabling professional applications like Blender, GIMP, and scientific computing tools to run natively in browsers.
+
+**🚀 Your Support Enables**:
+- Continued maintenance and updates
+- Performance optimizations
+- New library ports and integrations
+- Documentation and tutorials
+- Cross-browser compatibility testing
+
+**[💖 Sponsor this work](https://github.com/sponsors/superstructor)** to help build the future of browser-native computing.
+
+### WASM Fork Attribution
+
+Copyright (C) 2025 Superstruct Ltd, New Zealand
 Licensed under the same license as the underlying GNU FriBidi project (LGPL 2.1+)
 
 ## Acknowledgments
