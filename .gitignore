@@ -1,3 +1,5 @@
+/install/
+
 # WASM build artifacts
 *.wasm
 *.js.map
