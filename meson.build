@@ -72,6 +72,7 @@ incs = include_directories('.', 'lib', 'gen.tab')
 
 subdir('gen.tab')
 subdir('lib')
+subdir('wasm')
 if get_option('bin') or get_option('tests')
   subdir('bin')
 endif
