@@ -28,6 +28,7 @@ fribidi_side_link_args = [
   '-fPIC',
   '-O3',
   '-flto',
+  '-sERROR_ON_UNDEFINED_SYMBOLS=0',  # Host provides dependencies (glib, etc.)
   '-sEXPORTED_FUNCTIONS=["_fribidi_wasm_version"]',
 ]
 
@@ -36,6 +37,7 @@ shared_module(
   files('fribidi_wasm_side.c'),
   dependencies: [libfribidi_dep],
   name_prefix: '',
+  name_suffix: 'wasm',
   c_args: fribidi_wasm_cargs,
   link_args: fribidi_side_link_args,
   install: true,
