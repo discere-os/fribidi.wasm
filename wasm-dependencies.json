@@ -1,0 +1,29 @@
+{
+  "wasm:glib": {
+    "version": "^2.78.0",
+    "symbols": {
+      "required": [
+        "g_malloc",
+        "g_free"
+      ],
+      "optional": [
+        "g_strdup"
+      ]
+    },
+    "loading": "eager",
+    "fallback": null
+  },
+  "wasm:libc": {
+    "version": "*",
+    "symbols": {
+      "required": [
+        "malloc",
+        "free",
+        "memcpy",
+        "memset"
+      ]
+    },
+    "loading": "eager",
+    "fallback": null
+  }
+}
